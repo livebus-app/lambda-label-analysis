@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id        Int       @id @default(autoincrement())
+  name      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @default(now()) @updatedAt
+  Vehicle   Vehicle[]
+}
+
+model Device {
+  id        Int         @id @default(autoincrement())
+  name      String
+  code      String
+  vehicleId Int
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @default(now()) @updatedAt
+  Alert     Alert[]
+  Vehicle   Vehicle     @relation(fields: [vehicleId], references: [id])
+  Telemetry Telemetry[]
+}
+
+model Telemetry {
+  id             Int      @id @default(autoincrement())
+  deviceId       Int
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now()) @updatedAt
+  passengerCount Int
+  Device         Device   @relation(fields: [deviceId], references: [id])
+}
+
+model Alert {
+  id          Int      @id @default(autoincrement())
+  type        String
+  description String
+  deviceId    Int
+  expiredAt   DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+  Device      Device   @relation(fields: [deviceId], references: [id])
+}
+
+model Vehicle {
+  id        Int      @id @default(autoincrement())
+  name      String
+  companyId Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  Device    Device[]
+  Company   Company  @relation(fields: [companyId], references: [id])
+}

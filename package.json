@@ -1,0 +1,29 @@
+{
+  "name": "live-digest",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsup app.ts --clean --format esm --minify",
+    "deploy": "pnpm run build && docker build -t live-digest .",
+    "push": "docker tag live-digest:latest 033809494047.dkr.ecr.us-east-1.amazonaws.com/live-digest:latest && docker push 033809494047.dkr.ecr.us-east-1.amazonaws.com/live-digest:latest",
+    "run": "docker run -p 9000:8080 live-digest"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.388.0",
+    "@aws-sdk/client-rekognition": "^3.388.0",
+    "@prisma/client": "5.1.1",
+    "@types/aws-lambda": "^8.10.119",
+    "nanoid": "^4.0.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.4.10",
+    "prisma": "^5.1.1",
+    "tsup": "^7.2.0",
+    "typescript": "^5.1.6"
+  }
+}
