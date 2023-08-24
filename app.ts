@@ -49,12 +49,12 @@ function countLabel(labels: string[], rekognitionPayload: any) {
 const main = async (event: S3Event) => {
   const objectInfo = event.Records?.[0]?.s3;
   
-  if (!objectInfo) throw new Error("No object info2");
+  if (!objectInfo) throw new Error("No object info");
 
   const { name: bucketName } = objectInfo?.bucket;
   const { key: objectKey } = objectInfo?.object;
 
-  if (!objectInfo) throw new Error("No object info2");
+  if (!objectInfo) throw new Error("No object info");
 
   const rekognitionResponse = await detectLabels({
     bucketName,
