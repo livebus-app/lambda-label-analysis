@@ -46,18 +46,18 @@ async function insertDynamoDBItem(data: Record<string, any>) {
   return rekognitionPayload.Labels.filter((label: { Name: string }) => labels.includes(label.Name)).reduce((acc, label) => acc + label.Instances.length, 0);
 } */
 
-const main = async (event: S3Event) => {
-  const objectInfo = event.Records?.[0]?.s3;
+const main = async (event: any) => {
   await insertDynamoDBItem({
-    objectInfo,
+    event,
   });
-
-  if (!objectInfo) throw new Error("No object info");
+  const objectInfo = event.Records?.[0]?.s3;
+  
+  if (!objectInfo) throw new Error("No object info2");
 
   const { name: bucketName } = objectInfo?.bucket;
   const { key: objectKey } = objectInfo?.object;
 
-  if (!objectInfo) throw new Error("No object info");
+  if (!objectInfo) throw new Error("No object info2");
 
   const rekognitionResponse = await detectLabels({
     bucketName,
@@ -69,5 +69,5 @@ const main = async (event: S3Event) => {
     rekognitionPayload: rekognitionResponse,
   });
 };
-
+main({ name: "brun" })
 export { main };
