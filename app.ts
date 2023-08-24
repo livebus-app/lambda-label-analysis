@@ -20,7 +20,7 @@ async function detectLabels({ bucketName, objectName }: DetectLabelsParams) {
         Name: objectName,
       },
     },
-    MinConfidence: 80,
+    MinConfidence: parseInt(process.env.REKOGNITION_MIN_CONFIDENCE || "80"),
     Settings: {
       GeneralLabels: {
         LabelInclusionFilters: desiredLabels,
@@ -42,58 +42,29 @@ async function insertDynamoDBItem(data: Record<string, any>) {
   });
 }
 
-function countLabel(labels: string[], rekognitionPayload: any) {
+/* function countLabel(labels: string[], rekognitionPayload: any) {
   return rekognitionPayload.Labels.filter((label: { Name: string }) => labels.includes(label.Name)).reduce((acc, label) => acc + label.Instances.length, 0);
-}
+} */
 
 const main = async (event: S3Event) => {
-  try {
-    await insertDynamoDBItem(event);
-    const objectInfo = event.Records?.[0]?.s3;
+  const objectInfo = event.Records?.[0]?.s3;
 
-    if (!objectInfo) throw new Error("No object info");
+  if (!objectInfo) throw new Error("No object info");
 
-    const labelsResponse = await detectLabels({
-      bucketName: objectInfo.bucket.name,
-      objectName: objectInfo.object.key,
-    });
+  const { name: bucketName } = objectInfo?.bucket;
+  const { key: objectKey } = objectInfo?.object;
 
-    const weaponsCount = countLabel(["Weapon", "Knife", "Gun"], labelsResponse);
-    const peopleCount = countLabel(["Person"], labelsResponse);
+  if (!objectInfo) throw new Error("No object info");
 
-    const device = await prisma.device.findFirst({
-      where: {
-        code: objectInfo.bucket.name,
-      }
-    });
-
-    if (device) {
-      if (weaponsCount > 0) {
-        await prisma.alert.create({
-          data: {
-            expiredAt: new Date(Date.now() + 15 * 60 * 1000),
-            deviceId: device.id,
-            type: "WEAPON_DETECTION",
-            description: `${weaponsCount} weapons detected in ${objectInfo.object.key}`,
-          }
-        })
-      }
-
-      await prisma.telemetry.create({
-        data: {
-          passengerCount: peopleCount,
-          deviceId: device.id,
-        }
-      });
-    }
-  } catch (error) {
-    return {
-      statusCode: 500,
-      body: JSON.stringify(error),
-    }
-  }
-
-  return "Process Finished";
+  const rekognitionResponse = await detectLabels({
+    bucketName,
+    objectName: objectKey,
+  });
+  
+  return insertDynamoDBItem({
+    deviceCode: "device-1", // TODO: get from event
+    rekognitionPayload: rekognitionResponse,
+  });
 };
 
 export { main };
