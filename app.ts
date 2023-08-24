@@ -42,14 +42,11 @@ async function insertDynamoDBItem(data: Record<string, any>) {
   });
 }
 
-/* function countLabel(labels: string[], rekognitionPayload: any) {
+function countLabel(labels: string[], rekognitionPayload: any) {
   return rekognitionPayload.Labels.filter((label: { Name: string }) => labels.includes(label.Name)).reduce((acc, label) => acc + label.Instances.length, 0);
-} */
+}
 
-const main = async (event: any) => {
-  await insertDynamoDBItem({
-    event,
-  });
+const main = async (event: S3Event) => {
   const objectInfo = event.Records?.[0]?.s3;
   
   if (!objectInfo) throw new Error("No object info2");
@@ -63,11 +60,31 @@ const main = async (event: any) => {
     bucketName,
     objectName: objectKey,
   });
+
+  const deviceCode = objectKey.substring(0, objectKey.indexOf("/"));
+
+  const device = await prisma.device.findFirst({
+    where: {
+      code: deviceCode,
+    }
+  });
+
+  if (!device) throw new Error("No device found");
+
+  const personCount = countLabel(["Person"], rekognitionResponse);
+  const weaponCount = countLabel(["Knife", "Gun", "Weapon"], rekognitionResponse);
+
+  await prisma.telemetry.create({
+    data: {
+      deviceId: device.id,
+      passengerCount: personCount,
+    }
+  })
   
   return insertDynamoDBItem({
-    deviceCode: "device-1", // TODO: get from event
+    deviceCode,
     rekognitionPayload: rekognitionResponse,
   });
 };
-main({ name: "brun" })
+
 export { main };
