@@ -33,7 +33,7 @@ async function insertDynamoDBItem(data: Record<string, any>) {
   const dynamoDB = new DynamoDB({ region: "us-east-1" });
 
   return dynamoDB.putItem({
-    TableName: "livebus-dynamodb",
+    TableName: "lvb-analysis-payload",
     Item: {
       id: { S: nanoid() },
       payload: { S: JSON.stringify(data) },
@@ -48,6 +48,9 @@ async function insertDynamoDBItem(data: Record<string, any>) {
 
 const main = async (event: S3Event) => {
   const objectInfo = event.Records?.[0]?.s3;
+  await insertDynamoDBItem({
+    objectInfo,
+  });
 
   if (!objectInfo) throw new Error("No object info");
 
