@@ -2,12 +2,28 @@ import { DynamoDB } from "@aws-sdk/client-dynamodb";
 import { Rekognition } from "@aws-sdk/client-rekognition";
 import { S3Event } from "aws-lambda";
 import { nanoid } from "nanoid";
-import { PrismaClient } from '@prisma/client'
-const prisma = new PrismaClient()
 
-type DetectLabelsParams = {
-  bucketName: string;
-  objectName: string;
+const main = async (event: S3Event) => {
+  const objectInfo = event.Records?.[0]?.s3;
+  
+  if (!objectInfo) throw new Error("No object info");
+
+  const { name: bucketName } = objectInfo?.bucket;
+  const { key: objectKey } = objectInfo?.object;
+
+  if (!objectInfo) throw new Error("No object info");
+
+  const rekognitionResponse = await detectLabels({
+    bucketName,
+    objectName: objectKey,
+  });
+
+  const deviceCode = objectKey.substring(0, objectKey.indexOf("/"));
+  
+  return insertDynamoDBItem({
+    deviceCode,
+    rekognitionPayload: rekognitionResponse,
+  });
 };
 
 async function detectLabels({ bucketName, objectName }: DetectLabelsParams) {
@@ -42,49 +58,9 @@ async function insertDynamoDBItem(data: Record<string, any>) {
   });
 }
 
-function countLabel(labels: string[], rekognitionPayload: any) {
-  return rekognitionPayload.Labels.filter((label: { Name: string }) => labels.includes(label.Name)).reduce((acc, label) => acc + label.Instances.length, 0);
-}
-
-const main = async (event: S3Event) => {
-  const objectInfo = event.Records?.[0]?.s3;
-  
-  if (!objectInfo) throw new Error("No object info");
-
-  const { name: bucketName } = objectInfo?.bucket;
-  const { key: objectKey } = objectInfo?.object;
-
-  if (!objectInfo) throw new Error("No object info");
-
-  const rekognitionResponse = await detectLabels({
-    bucketName,
-    objectName: objectKey,
-  });
-
-  const deviceCode = objectKey.substring(0, objectKey.indexOf("/"));
-
-  const device = await prisma.device.findFirst({
-    where: {
-      code: deviceCode,
-    }
-  });
-
-  if (!device) throw new Error("No device found");
-
-  const personCount = countLabel(["Person"], rekognitionResponse);
-  const weaponCount = countLabel(["Knife", "Gun", "Weapon"], rekognitionResponse);
-
-  await prisma.telemetry.create({
-    data: {
-      deviceId: device.id,
-      passengerCount: personCount,
-    }
-  })
-  
-  return insertDynamoDBItem({
-    deviceCode,
-    rekognitionPayload: rekognitionResponse,
-  });
+type DetectLabelsParams = {
+  bucketName: string;
+  objectName: string;
 };
 
 export { main };
