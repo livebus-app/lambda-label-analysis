@@ -36,7 +36,7 @@ async function detectLabels({ bucketName, objectName }: DetectLabelsParams) {
         Name: objectName,
       },
     },
-    MinConfidence: parseInt(process.env.REKOGNITION_MIN_CONFIDENCE || "60"),
+    MinConfidence: parseInt(process.env.REKOGNITION_MIN_CONFIDENCE || "80"),
     Settings: {
       GeneralLabels: {
         LabelInclusionFilters: desiredLabels,
