@@ -23,7 +23,7 @@ const main = async (event: S3Event) => {
   return insertDynamoDBItem({
     deviceCode,
     rekognitionPayload: rekognitionResponse,
-    timestamp: event.Records?.[0]?.eventTime || "0",
+    timestamp: event.Records?.[0]?.eventTime,
   });
 };
 
@@ -54,7 +54,7 @@ async function insertDynamoDBItem(data: Record<string, any>) {
     Item: {
       id: { S: nanoid() },
       payload: { S: JSON.stringify(data) },
-      insertedAt: { S: new Date().toISOString() }
+      insertedAt: { S: new Date().toISOString() },
     },
   });
 }
