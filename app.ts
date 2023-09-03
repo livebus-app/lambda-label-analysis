@@ -24,6 +24,7 @@ const main = async (event: S3Event) => {
     deviceCode,
     rekognitionPayload: rekognitionResponse,
     timestamp: event.Records?.[0]?.eventTime,
+    objectKey,
   });
 };
 
